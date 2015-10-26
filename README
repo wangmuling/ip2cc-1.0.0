@@ -2,4 +2,16 @@
 
 sh install.sh
 
+ip2cc 61.135.169.105
+
+ip2cc-update 
+
+ip2cc-dig www.google.com
+
+ip2cc-nslookup www.google.com
+
+ip2cc-traceroute www.google.com
+
+ip2cc-ping www.163.com
+
 
