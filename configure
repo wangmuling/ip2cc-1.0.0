@@ -1,0 +1,115 @@
+#!/bin/sh
+prefix=/usr/local
+if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
+echo "Usage: ./configure [options]"
+echo "  --help               print this message"
+echo "  --prefix=PREFIX      default:/usr/local"
+echo "  --bindir=BINDIR      default:$prefix/bin"
+echo "  --datadir=BINDIR     default:$prefix/share"
+echo ""
+exit 1
+fi
+
+if test ! -d ./libqqwry
+then
+    echo there is no ./libqqwry
+    echo see http://code.google.com/p/qqwry/
+    exit 1
+fi
+
+
+
+# parse options
+
+for opt do
+    optarg="${opt#*=}"
+    case "$opt" in
+        --prefix=*)
+            prefix="$optarg"
+            ;;
+        --bindir=*)
+            bindir="$optarg"
+            ;;
+        --datadir=*)
+            datadir="$optarg"
+            ;;
+    esac
+done
+
+if test "z$bindir" = "z" 
+then
+    bindir=${prefix}/bin
+fi
+
+if test "z$datadir" = "z" 
+then
+    datadir=${prefix}/share
+fi
+
+
+# generate config files
+
+cat > config.mak << EOF
+prefix=$prefix
+bindir=$bindir
+datadir=$datadir
+EOF
+
+cat > config.h << EOF
+#define NALI_QQWRY_PATH "$datadir/QQWry.Dat"
+EOF
+
+cat > bin/ip2cc << EOF
+#!/bin/sh
+if test \$# -gt 0
+then
+    echo \$@|perl $datadir/ip2cc.pl
+else
+    perl $datadir/ip2cc.pl
+fi
+EOF
+
+cat > bin/ip2cc-update << EOF
+#!/bin/sh
+qqwry_dat_copywrite_url="http://update.cz88.net/ip/copywrite.rar"
+qqwry_dat_data_url="http://update.cz88.net/ip/qqwry.rar"
+qqwry_dat_local_path="$datadir/QQWry.Dat"
+curl=\`which curl\`
+wget=\`which wget\`
+php=\`which php\`
+rm=\`which rm\`
+
+if test "x\$curl" != "x" &&  test -x \$curl 
+then
+    command_copywrite="\$curl -k --compressed \$qqwry_dat_copywrite_url -o /tmp/copywrite.rar"
+    command_data="\$curl -k --compressed \$qqwry_dat_data_url -o /tmp/qqwry.rar"
+elif test "x\$wget" != "x" &&  test -x \$wget
+then
+    command_copywrite="\$wget --no-check-certificate \$qqwry_dat_copywrite_url -O /tmp/copywrite.rar"
+    command_data="\$wget --no-check-certificate \$qqwry_dat_data_url -O /tmp/qqwry.rar"
+else
+    echo Error: Please install curl or wget
+    exit 1
+fi 
+echo Updating \$qqwry_dat_local_path
+command_qqwry="\$php $datadir/qqwry.php"
+command_rm_rar_copywrite="\$rm -fvr /tmp/copywrite.rar"
+command_rm_rar_qqwry="\$rm -fvr /tmp/qqwry.rar"
+\$command_copywrite
+\$command_data 
+\$command_qqwry 
+\$command_rm_rar_copywrite
+\$command_rm_rar_qqwry
+echo Successfully Updated && exit 0
+
+echo Failed to update
+exit 1
+EOF
+
+echo '***** Configure Successfully *****'
+echo
+echo "Install:"
+echo 'make && make install'
+echo
+echo "Usage and Examples:";
+echo 'http://www.surfchen.org/wiki/Nali'
